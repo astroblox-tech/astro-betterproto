@@ -179,13 +179,12 @@ def dataclass_field(
     optional: bool = False,
 ) -> dataclasses.Field:
     """Creates a dataclass field with attached protobuf metadata."""
+    if group is not None:
+        # ASTRO CHANGE: Mark one-of fields as optional
+        optional = True
     return dataclasses.field(
         default=None if optional else PLACEHOLDER,
-        metadata={
-            "betterproto": FieldMetadata(
-                number, proto_type, map_types, group, wraps, optional
-            )
-        },
+        metadata={"betterproto": FieldMetadata(number, proto_type, map_types, group, wraps, optional)},
     )
 
 
@@ -202,87 +201,59 @@ def bool_field(number: int, group: Optional[str] = None, optional: bool = False)
     return dataclass_field(number, TYPE_BOOL, group=group, optional=optional)
 
 
-def int32_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def int32_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_INT32, group=group, optional=optional)
 
 
-def int64_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def int64_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_INT64, group=group, optional=optional)
 
 
-def uint32_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def uint32_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_UINT32, group=group, optional=optional)
 
 
-def uint64_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def uint64_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_UINT64, group=group, optional=optional)
 
 
-def sint32_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def sint32_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_SINT32, group=group, optional=optional)
 
 
-def sint64_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def sint64_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_SINT64, group=group, optional=optional)
 
 
-def float_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def float_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_FLOAT, group=group, optional=optional)
 
 
-def double_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def double_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_DOUBLE, group=group, optional=optional)
 
 
-def fixed32_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def fixed32_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_FIXED32, group=group, optional=optional)
 
 
-def fixed64_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def fixed64_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_FIXED64, group=group, optional=optional)
 
 
-def sfixed32_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def sfixed32_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_SFIXED32, group=group, optional=optional)
 
 
-def sfixed64_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def sfixed64_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_SFIXED64, group=group, optional=optional)
 
 
-def string_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def string_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_STRING, group=group, optional=optional)
 
 
-def bytes_field(
-    number: int, group: Optional[str] = None, optional: bool = False
-) -> Any:
+def bytes_field(number: int, group: Optional[str] = None, optional: bool = False) -> Any:
     return dataclass_field(number, TYPE_BYTES, group=group, optional=optional)
 
 
@@ -292,17 +263,11 @@ def message_field(
     wraps: Optional[str] = None,
     optional: bool = False,
 ) -> Any:
-    return dataclass_field(
-        number, TYPE_MESSAGE, group=group, wraps=wraps, optional=optional
-    )
+    return dataclass_field(number, TYPE_MESSAGE, group=group, wraps=wraps, optional=optional)
 
 
-def map_field(
-    number: int, key_type: str, value_type: str, group: Optional[str] = None
-) -> Any:
-    return dataclass_field(
-        number, TYPE_MAP, map_types=(key_type, value_type), group=group
-    )
+def map_field(number: int, key_type: str, value_type: str, group: Optional[str] = None) -> Any:
+    return dataclass_field(number, TYPE_MAP, map_types=(key_type, value_type), group=group)
 
 
 class Enum(enum.IntEnum):
@@ -515,9 +480,7 @@ def parse_fields(value: bytes) -> Generator[ParsedField, None, None]:
         elif wire_type == WIRE_FIXED_32:
             decoded, i = value[i : i + 4], i + 4
 
-        yield ParsedField(
-            number=number, wire_type=wire_type, value=decoded, raw=value[start:i]
-        )
+        yield ParsedField(number=number, wire_type=wire_type, value=decoded, raw=value[start:i])
 
 
 class ProtoClassMetadata:
@@ -562,22 +525,16 @@ class ProtoClassMetadata:
         self.oneof_field_by_group = by_group
         self.field_name_by_number = by_field_number
         self.meta_by_field_name = by_field_name
-        self.sorted_field_names = tuple(
-            by_field_number[number] for number in sorted(by_field_number)
-        )
+        self.sorted_field_names = tuple(by_field_number[number] for number in sorted(by_field_number))
         self.default_gen = self._get_default_gen(cls, fields)
         self.cls_by_field = self._get_cls_by_field(cls, fields)
 
     @staticmethod
-    def _get_default_gen(
-        cls: Type["Message"], fields: Iterable[dataclasses.Field]
-    ) -> Dict[str, Callable[[], Any]]:
+    def _get_default_gen(cls: Type["Message"], fields: Iterable[dataclasses.Field]) -> Dict[str, Callable[[], Any]]:
         return {field.name: cls._get_field_default_gen(field) for field in fields}
 
     @staticmethod
-    def _get_cls_by_field(
-        cls: Type["Message"], fields: Iterable[dataclasses.Field]
-    ) -> Dict[str, Type]:
+    def _get_cls_by_field(cls: Type["Message"], fields: Iterable[dataclasses.Field]) -> Dict[str, Type]:
         field_cls = {}
 
         for field in fields:
@@ -704,11 +661,7 @@ class Message(ABC):
             return value
 
     def __setattr__(self, attr: str, value: Any) -> None:
-        if (
-            isinstance(value, Message)
-            and hasattr(value, "_betterproto")
-            and not value._betterproto.meta_by_field_name
-        ):
+        if isinstance(value, Message) and hasattr(value, "_betterproto") and not value._betterproto.meta_by_field_name:
             value._serialized_on_wire = True
 
         if attr != "_serialized_on_wire":
@@ -729,8 +682,7 @@ class Message(ABC):
     def __bool__(self) -> bool:
         """True if the Message has any fields with non-default values."""
         return any(
-            self.__raw_get(field_name)
-            not in (PLACEHOLDER, self._get_field_default(field_name))
+            self.__raw_get(field_name) not in (PLACEHOLDER, self._get_field_default(field_name))
             for field_name in self._betterproto.meta_by_field_name
         )
 
@@ -775,17 +727,13 @@ class Message(ABC):
             # Note that proto3 field presence/optional fields are put in a
             # synthetic single-item oneof by protoc, which helps us ensure we
             # send the value even if the value is the default zero value.
-            selected_in_group = (
-                meta.group and self._group_current[meta.group] == field_name
-            )
+            selected_in_group = meta.group and self._group_current[meta.group] == field_name
 
             # Empty messages can still be sent on the wire if they were
             # set (or received empty).
             serialize_empty = isinstance(value, Message) and value._serialized_on_wire
 
-            include_default_value_for_oneof = self._include_default_value_for_oneof(
-                field_name=field_name, meta=meta
-            )
+            include_default_value_for_oneof = self._include_default_value_for_oneof(field_name=field_name, meta=meta)
 
             if value == self._get_field_default(field_name) and not (
                 selected_in_group or serialize_empty or include_default_value_for_oneof
@@ -831,11 +779,7 @@ class Message(ABC):
                 # a oneof, make sure we serialize it. This ensures that the byte string
                 # output isn't simply an empty string. This also ensures that round trip
                 # serialization will keep `which_one_of` calls consistent.
-                if (
-                    isinstance(value, str)
-                    and value == ""
-                    and include_default_value_for_oneof
-                ):
+                if isinstance(value, str) and value == "" and include_default_value_for_oneof:
                     serialize_empty = True
 
                 output += _serialize_single(
@@ -918,9 +862,7 @@ class Message(ABC):
             # it should result in its zero value.
             return t
 
-    def _postprocess_single(
-        self, wire_type: int, meta: FieldMetadata, field_name: str, value: Any
-    ) -> Any:
+    def _postprocess_single(self, wire_type: int, meta: FieldMetadata, field_name: str, value: Any) -> Any:
         """Adjusts values after parsing."""
         if wire_type == WIRE_VARINT:
             if meta.proto_type in (TYPE_INT32, TYPE_INT64):
@@ -959,12 +901,8 @@ class Message(ABC):
 
         return value
 
-    def _include_default_value_for_oneof(
-        self, field_name: str, meta: FieldMetadata
-    ) -> bool:
-        return (
-            meta.group is not None and self._group_current.get(meta.group) == field_name
-        )
+    def _include_default_value_for_oneof(self, field_name: str, meta: FieldMetadata) -> bool:
+        return meta.group is not None and self._group_current.get(meta.group) == field_name
 
     def parse(self: T, data: bytes) -> T:
         """
@@ -1007,14 +945,10 @@ class Message(ABC):
                     else:
                         decoded, pos = decode_varint(parsed.value, pos)
                         wire_type = WIRE_VARINT
-                    decoded = self._postprocess_single(
-                        wire_type, meta, field_name, decoded
-                    )
+                    decoded = self._postprocess_single(wire_type, meta, field_name, decoded)
                     value.append(decoded)
             else:
-                value = self._postprocess_single(
-                    parsed.wire_type, meta, field_name, parsed.value
-                )
+                value = self._postprocess_single(parsed.wire_type, meta, field_name, parsed.value)
 
             current = getattr(self, field_name)
             if meta.proto_type == TYPE_MAP:
@@ -1051,9 +985,7 @@ class Message(ABC):
         """
         return cls().parse(data)
 
-    def to_dict(
-        self, casing: Casing = Casing.CAMEL, include_default_values: bool = False
-    ) -> Dict[str, Any]:
+    def to_dict(self, casing: Casing = Casing.CAMEL, include_default_values: bool = False) -> Dict[str, Any]:
         """
         Returns a JSON serializable dict representation of this object.
 
@@ -1084,18 +1016,14 @@ class Message(ABC):
                     if (
                         value != DATETIME_ZERO
                         or include_default_values
-                        or self._include_default_value_for_oneof(
-                            field_name=field_name, meta=meta
-                        )
+                        or self._include_default_value_for_oneof(field_name=field_name, meta=meta)
                     ):
                         output[cased_name] = _Timestamp.timestamp_to_json(value)
                 elif isinstance(value, timedelta):
                     if (
                         value != timedelta(0)
                         or include_default_values
-                        or self._include_default_value_for_oneof(
-                            field_name=field_name, meta=meta
-                        )
+                        or self._include_default_value_for_oneof(field_name=field_name, meta=meta)
                     ):
                         output[cased_name] = _Duration.delta_to_json(value)
                 elif meta.wraps:
@@ -1109,9 +1037,7 @@ class Message(ABC):
                     elif cls == timedelta:
                         value = [_Duration.delta_to_json(i) for i in value]
                     else:
-                        value = [
-                            i.to_dict(casing, include_default_values) for i in value
-                        ]
+                        value = [i.to_dict(casing, include_default_values) for i in value]
                     if value or include_default_values:
                         output[cased_name] = value
                 elif value is None:
@@ -1120,9 +1046,7 @@ class Message(ABC):
                 elif (
                     value._serialized_on_wire
                     or include_default_values
-                    or self._include_default_value_for_oneof(
-                        field_name=field_name, meta=meta
-                    )
+                    or self._include_default_value_for_oneof(field_name=field_name, meta=meta)
                 ):
                     output[cased_name] = value.to_dict(casing, include_default_values)
             elif meta.proto_type == TYPE_MAP:
@@ -1136,9 +1060,7 @@ class Message(ABC):
             elif (
                 value != self._get_field_default(field_name)
                 or include_default_values
-                or self._include_default_value_for_oneof(
-                    field_name=field_name, meta=meta
-                )
+                or self._include_default_value_for_oneof(field_name=field_name, meta=meta)
             ):
                 if meta.proto_type in INT_64_TYPES:
                     if field_is_repeated:
@@ -1150,9 +1072,7 @@ class Message(ABC):
                         output[cased_name] = str(value)
                 elif meta.proto_type == TYPE_BYTES:
                     if field_is_repeated:
-                        output[cased_name] = [
-                            b64encode(b).decode("utf8") for b in value
-                        ]
+                        output[cased_name] = [b64encode(b).decode("utf8") for b in value]
                     elif value is None and include_default_values:
                         output[cased_name] = value
                     else:
@@ -1160,9 +1080,7 @@ class Message(ABC):
                 elif meta.proto_type == TYPE_ENUM:
                     if field_is_repeated:
                         enum_class = field_types[field_name].__args__[0]
-                        if isinstance(value, typing.Iterable) and not isinstance(
-                            value, str
-                        ):
+                        if isinstance(value, typing.Iterable) and not isinstance(value, str):
                             output[cased_name] = [enum_class(el).name for el in value]
                         else:
                             # transparently upgrade single value to repeated
@@ -1215,10 +1133,7 @@ class Message(ABC):
                         if cls == datetime:
                             v = [isoparse(item) for item in value[key]]
                         elif cls == timedelta:
-                            v = [
-                                timedelta(seconds=float(item[:-1]))
-                                for item in value[key]
-                            ]
+                            v = [timedelta(seconds=float(item[:-1])) for item in value[key]]
                         else:
                             v = [cls().from_dict(item) for item in value[key]]
                     elif cls == datetime:
@@ -1326,9 +1241,7 @@ class Message(ABC):
         """
         return self.from_dict(json.loads(value))
 
-    def to_pydict(
-        self, casing: Casing = Casing.CAMEL, include_default_values: bool = False
-    ) -> Dict[str, Any]:
+    def to_pydict(self, casing: Casing = Casing.CAMEL, include_default_values: bool = False) -> Dict[str, Any]:
         """
         Returns a python dict representation of this object.
 
@@ -1358,18 +1271,14 @@ class Message(ABC):
                     if (
                         value != DATETIME_ZERO
                         or include_default_values
-                        or self._include_default_value_for_oneof(
-                            field_name=field_name, meta=meta
-                        )
+                        or self._include_default_value_for_oneof(field_name=field_name, meta=meta)
                     ):
                         output[cased_name] = value
                 elif isinstance(value, timedelta):
                     if (
                         value != timedelta(0)
                         or include_default_values
-                        or self._include_default_value_for_oneof(
-                            field_name=field_name, meta=meta
-                        )
+                        or self._include_default_value_for_oneof(field_name=field_name, meta=meta)
                     ):
                         output[cased_name] = value
                 elif meta.wraps:
@@ -1386,9 +1295,7 @@ class Message(ABC):
                 elif (
                     value._serialized_on_wire
                     or include_default_values
-                    or self._include_default_value_for_oneof(
-                        field_name=field_name, meta=meta
-                    )
+                    or self._include_default_value_for_oneof(field_name=field_name, meta=meta)
                 ):
                     output[cased_name] = value.to_pydict(casing, include_default_values)
             elif meta.proto_type == TYPE_MAP:
@@ -1401,9 +1308,7 @@ class Message(ABC):
             elif (
                 value != self._get_field_default(field_name)
                 or include_default_values
-                or self._include_default_value_for_oneof(
-                    field_name=field_name, meta=meta
-                )
+                or self._include_default_value_for_oneof(field_name=field_name, meta=meta)
             ):
                 output[cased_name] = value
         return output
@@ -1473,11 +1378,7 @@ class Message(ABC):
         :class:`bool`
             `True` if field has been set, otherwise `False`.
         """
-        default = (
-            PLACEHOLDER
-            if not self._betterproto.meta_by_field_name[name].optional
-            else None
-        )
+        default = PLACEHOLDER if not self._betterproto.meta_by_field_name[name].optional else None
         return self.__raw_get(name) is not default
 
     @classmethod
@@ -1486,7 +1387,6 @@ class Message(ABC):
         field_name_to_meta = cls._betterproto_meta.meta_by_field_name  # type: ignore
 
         for group, field_set in group_to_one_ofs.items():
-
             if len(field_set) == 1:
                 (field,) = field_set
                 field_name = field.name
@@ -1496,17 +1396,13 @@ class Message(ABC):
                 if meta.optional:
                     continue
 
-            set_fields = [
-                field.name for field in field_set if values[field.name] is not None
-            ]
+            set_fields = [field.name for field in field_set if values[field.name] is not None]
 
             if not set_fields:
                 raise ValueError(f"Group {group} has no value; all fields are None")
             elif len(set_fields) > 1:
                 set_fields_str = ", ".join(set_fields)
-                raise ValueError(
-                    f"Group {group} has more than one value; fields {set_fields_str} are not None"
-                )
+                raise ValueError(f"Group {group} has more than one value; fields {set_fields_str} are not None")
 
         return values
 
@@ -1559,9 +1455,7 @@ from .lib.google.protobuf import (  # noqa
 
 class _Duration(Duration):
     @classmethod
-    def from_timedelta(
-        cls, delta: timedelta, *, _1_microsecond: timedelta = timedelta(microseconds=1)
-    ) -> "_Duration":
+    def from_timedelta(cls, delta: timedelta, *, _1_microsecond: timedelta = timedelta(microseconds=1)) -> "_Duration":
         total_ms = delta // _1_microsecond
         seconds = int(total_ms / 1e6)
         nanos = int((total_ms % 1e6) * 1e3)
