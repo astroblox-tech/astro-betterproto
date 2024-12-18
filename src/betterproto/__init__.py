@@ -169,6 +169,10 @@ class FieldMetadata:
         return field.metadata["betterproto"]
 
 
+# Configuration flag for oneof field behavior
+INSTANTIATE_ONE_OF_FIELDS = False
+
+
 def dataclass_field(
     number: int,
     proto_type: str,
@@ -179,8 +183,7 @@ def dataclass_field(
     optional: bool = False,
 ) -> dataclasses.Field:
     """Creates a dataclass field with attached protobuf metadata."""
-    if group is not None:
-        # ASTRO CHANGE: Mark one-of fields as optional
+    if group is not None and not INSTANTIATE_ONE_OF_FIELDS:
         optional = True
     return dataclasses.field(
         default=None if optional else PLACEHOLDER,
@@ -587,16 +590,19 @@ class Message(ABC):
         group_current: Dict[str, Optional[str]] = {}
         for field_name, meta in self._betterproto.meta_by_field_name.items():
             if meta.group:
+                # Initialize group fields to None by default
                 group_current.setdefault(meta.group)
-
-            value = self.__raw_get(field_name)
-            if value != PLACEHOLDER and not (meta.optional and value is None):
-                # Found a non-sentinel value
-                all_sentinel = False
-
-                if meta.group:
+                if self.__raw_get(field_name) == PLACEHOLDER:
+                    setattr(self, field_name, None)
+                elif self.__raw_get(field_name) is not None:
                     # This was set, so make it the selected value of the one-of.
                     group_current[meta.group] = field_name
+                    all_sentinel = False
+            else:
+                value = self.__raw_get(field_name)
+                if value != PLACEHOLDER and not (meta.optional and value is None):
+                    # Found a non-sentinel value
+                    all_sentinel = False
 
         # Now that all the defaults are set, reset it!
         self.__dict__["_serialized_on_wire"] = not all_sentinel
@@ -655,6 +661,11 @@ class Message(ABC):
             value = super().__getattribute__(name)
             if value is not PLACEHOLDER:
                 return value
+
+            # Don't initialize default values for oneof fields if configured
+            meta = self._betterproto.meta_by_field_name.get(name)
+            if meta and meta.group and not INSTANTIATE_ONE_OF_FIELDS:
+                return None
 
             value = self._get_field_default(name)
             super().__setattr__(name, value)
@@ -828,6 +839,11 @@ class Message(ABC):
         return field_cls
 
     def _get_field_default(self, field_name: str) -> Any:
+        meta = self._betterproto.meta_by_field_name.get(field_name)
+        # Return None for oneof fields instead of generating a default if configured
+        if meta and meta.group and not INSTANTIATE_ONE_OF_FIELDS:
+            return None
+
         with warnings.catch_warnings():
             # ignore warnings when initialising deprecated field defaults
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -1398,9 +1414,8 @@ class Message(ABC):
 
             set_fields = [field.name for field in field_set if values[field.name] is not None]
 
-            if not set_fields:
-                raise ValueError(f"Group {group} has no value; all fields are None")
-            elif len(set_fields) > 1:
+            # Don't require a value for oneof groups
+            if len(set_fields) > 1:
                 set_fields_str = ", ".join(set_fields)
                 raise ValueError(f"Group {group} has more than one value; fields {set_fields_str} are not None")
 
